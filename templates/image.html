@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Изображение</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        #image-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+        }
+        #image-container:active {
+            cursor: grabbing;
+        }
+        #zoomImage {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            transition: transform 0.1s ease-out;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background-color: rgba(46, 125, 50, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .controls button {
+            margin: 0 5px;
+        }
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Главная</a>
+        <a href="/links">Законы</a>
+        <a href="/image">Изображение</a>
+    </nav>
+    <div id="image-container">
+        <img id="zoomImage" src="{{ url_for('static', filename='img/1.jpg') }}" alt="Масштабируемое изображение" draggable="false">
+    </div>
+    <div class="controls">
+        <button id="zoomInBtn">Увеличить</button>
+        <button id="zoomOutBtn">Уменьшить</button>
+        <button onclick="resetZoom()">Сбросить</button>
+        <button onclick="toggleFullscreen()">На весь экран</button>
+    </div>
+    <script>
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY, translateX = 0, translateY = 0;
+        const container = document.getElementById('image-container');
+        const image = document.getElementById('zoomImage');
+
+        const MIN_SCALE = 0.1;
+        const MAX_SCALE = 10;
+
+        let currentMouseX = 0;
+        let currentMouseY = 0;
+
+        document.addEventListener('mousemove', function(e) {
+            currentMouseX = e.clientX;
+            currentMouseY = e.clientY;
+        });
+
+        function zoomToPoint(x, y, factor) {
+            const rect = container.getBoundingClientRect();
+            const mouseX = x - rect.left;
+            const mouseY = y - rect.top;
+
+            // Вычисляем позицию мыши относительно изображения до масштабирования
+            const pointX = (mouseX - translateX) / scale;
+            const pointY = (mouseY - translateY) / scale;
+
+            // Обновляем масштаб
+            const oldScale = scale;
+            scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor));
+
+            // Вычисляем новые координаты перемещения
+            const newX = mouseX - pointX * scale;
+            const newY = mouseY - pointY * scale;
+
+            // Обновляем положение
+            translateX = newX;
+            translateY = newY;
+
+            updateImagePosition();
+        }
+
+        container.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.1 : 0.9;
+            zoomToPoint(e.clientX, e.clientY, factor);
+        });
+
+        function startDragging(e) {
+            if (e.button !== 0) return;
+            isDragging = true;
+            startX = e.clientX - translateX;
+            startY = e.clientY - translateY;
+            container.style.cursor = 'grabbing';
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            updateImagePosition();
+        }
+
+        function stopDragging() {
+            isDragging = false;
+            container.style.cursor = 'grab';
+        }
+
+        function updateImagePosition() {
+            image.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+
+        document.getElementById('zoomInBtn').addEventListener('click', function() {
+            zoomToPoint(currentMouseX, currentMouseY, 1.2);
+        });
+
+        document.getElementById('zoomOutBtn').addEventListener('click', function() {
+            zoomToPoint(currentMouseX, currentMouseY, 0.8);
+        });
+
+        container.addEventListener('mousedown', startDragging);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDragging);
+        document.addEventListener('mouseleave', stopDragging);
+
+        function resetZoom() {
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
+            updateImagePosition();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    alert(`Ошибка: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
