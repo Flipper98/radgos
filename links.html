@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Законы</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a href="/">Главная</a>
+        <a href="/links">Законы</a>
+        <a href="/image">Изображение</a>
+    </nav>
+    <div class="container">
+        <h1>Законы</h1>
+        <ul class="links-list">
+            {% for link in links %}
+            <li>
+                <a href="{{ link.url }}" target="_blank">{{ link.title }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
